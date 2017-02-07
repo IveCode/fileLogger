@@ -18,7 +18,7 @@ const (
 	DEFAULT_FILE_COUNT = 10
 	DEFAULT_FILE_SIZE  = 50
 	DEFAULT_FILE_UNIT  = MB
-	DEFAULT_LOG_SCAN   = 300
+	DEFAULT_LOG_SCAN   = 60 //default 300s
 	DEFAULT_LOG_SEQ    = 5000
 	DEFAULT_LOG_LEVEL  = TRACE
 )
@@ -268,10 +268,7 @@ func (f *FileLogger) fileMonitor() {
 		}
 	}()
 
-	//TODO  load logScan interval from config file
-	logScan := DEFAULT_LOG_SCAN
-
-	timer := time.NewTicker(time.Duration(logScan) * time.Second)
+	timer := time.NewTicker(time.Duration(f.logScan) * time.Second)
 	for {
 		select {
 		case <-timer.C:
@@ -294,6 +291,13 @@ func (f *FileLogger) fileCheck() {
 
 		f.split()
 	}
+	
+	//file is Exist
+        logFile := joinFilePath(f.fileDir, f.fileName)
+        if !isExist(logFile) {
+                f.logFile, _ = os.OpenFile(logFile, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+                f.lg = log.New(f.logFile, f.prefix, log.LstdFlags|log.Lmicroseconds)
+        }
 }
 
 // passive to close fileLogger
